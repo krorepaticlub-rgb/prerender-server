@@ -2,8 +2,10 @@ import express from "express";
 import puppeteer from "puppeteer-core";
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
+
+// 👇 paste your token here
+const BROWSERLESS_URL = "wss://chrome.browserless.io?token=2USaklerno1ccst96a3de2a00fcd8c76abecc100021dbd657";
 
 app.get("/render", async (req, res) => {
   const url = req.query.url;
@@ -15,22 +17,15 @@ app.get("/render", async (req, res) => {
   let browser;
 
   try {
-    browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu"
-      ],
-      headless: "new"
+    browser = await puppeteer.connect({
+      browserWSEndpoint: BROWSERLESS_URL
     });
 
     const page = await browser.newPage();
 
     await page.goto(url, {
       waitUntil: "networkidle2",
-      timeout: 15000
+      timeout: 20000
     });
 
     const html = await page.content();
@@ -42,9 +37,7 @@ app.get("/render", async (req, res) => {
     console.error("Render error:", error);
     res.status(500).send("Rendering failed");
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    if (browser) await browser.close();
   }
 });
 
